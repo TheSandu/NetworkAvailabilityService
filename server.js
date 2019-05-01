@@ -1,7 +1,7 @@
 var express       = require('express');
 var bodyParser    = require('body-parser');
 var MongoClient   = require('mongodb').MongoClient;
-var Server        = require('mongodb').Server;
+var ObjectId   = require('mongodb').ObjectId;
 
 var express    = require('express');
 var app        = express();
@@ -24,7 +24,7 @@ var port = process.env.PORT || 8080;
 var router = express.Router();
 
 router.get('/', function(req, res) {
-    res.json({ message: 'hooray! welcome to our api!' });   
+    res.json({ message: 'Geometri data service!' });   
 });
 
 router.post( '/report/insert', ( req, res ) => {
@@ -35,10 +35,55 @@ router.post( '/report/insert', ( req, res ) => {
     db.collection( 'reports' ).insertOne( insertDoc, ( err ) => {
         if (err)
             throw err;
-        
         res.json( { message: "Report inserted" } );
     }) 
 });
+
+router.post( '/chisinauBuildings/statusUpdate', ( req, res ) => {
+    console.log('From /chisinauBuildings/statusUpdate:');
+
+    console.log( req.body );
+    if ( !req.body.connection || !req.body._id )
+        return res.json( { message: "Invalid building attributes" } );
+    
+    let buildingQuery = { _id : ObjectId(req.body._id) }
+
+    db.collection( 'chisinauBuildings' ).updateOne( buildingQuery, { 'attributes.connected': req.body.connection }, ( err ) => {
+        if (err)
+            throw err;
+        
+        res.json( { message: "Update building satatus" } );
+    }) 
+
+
+});
+
+router.post( '/connectionPoint/insert', ( req, res ) => {
+    console.log('From /connectionPoint/insert:');
+
+    console.log( req.body );
+    if ( !req.body.x || !req.body.y || req.body.type )
+        return res.json( { message: "Invalid connection Point" } );
+    
+    let deffaultSR = { latestWkid : 3857, wkid : 102100 };
+
+    let connectionPoint = { 
+        spatialReference : req.body.spatialReference || deffaultSR , 
+        x : req.body.x,
+        y : req.body.y,
+        connectionPointType : req.body.type,
+    }
+
+    db.collection( 'connections' ).insertOne( connectionPoint, ( err ) => {
+        if (err)
+            throw err;
+        
+        res.json( { message: "ConnectionPoint inserted" } );
+    }) 
+
+
+});
+
 
 router.post( '/log/insert', ( req, res ) => {
     console.log('From /log/insert:');
